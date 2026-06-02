@@ -3,6 +3,9 @@ using Linearstar.Windows.RawInput.Native;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
+using System.Net.Sockets;
+using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -20,6 +23,17 @@ namespace TeknoParrotUi.Helpers
         private readonly List<string> _multipleMouseList = new List<string>();
         private readonly List<string> _multipleKBList = new List<string>();
 
+        // TCP capture fields (config-time only)
+        private const int TcpCapturePort = 33610;
+        private const int PacketSize = 46;
+        private TcpListener _tcpCapture;
+        private Thread _tcpCaptureThread;
+        private volatile bool _tcpCaptureRunning;
+        private volatile bool _tcpClientConnected;
+        private bool[] _capturePrevTrigger = new bool[4];
+        private bool[] _capturePrevReload  = new bool[4];
+        private bool[] _capturePrevAction  = new bool[4];
+
         public void Listen()
         {
             var hWnd = new WindowInteropHelper(Application.Current.MainWindow ?? throw new InvalidOperationException()).EnsureHandle();
@@ -29,6 +43,7 @@ namespace TeknoParrotUi.Helpers
 
             RawInputDevice.RegisterDevice(HidUsageAndPage.Mouse, RawInputDeviceFlags.InputSink, hWnd);
             RawInputDevice.RegisterDevice(HidUsageAndPage.Keyboard, RawInputDeviceFlags.InputSink, hWnd);
+
 
             // Create a list of devices that have the same name.
             // These will be checked in GetFancyName() and get a unique CRC added.
@@ -235,8 +250,8 @@ namespace TeknoParrotUi.Helpers
                     case RawInputMouseData mouse:
                         if (mouse.Mouse.Buttons != RawMouseButtonFlags.None && !mouse.Mouse.Buttons.ToString().Contains("Up"))
                         {
+                            if (_tcpClientConnected) break; // TCP client active — it handles button capture
                             var button = GetButtonFromFlags(mouse.Mouse.Buttons);
-
                             if (button != RawMouseButton.None)
                                 SetTextBoxText(String.Format("{0} {1}", GetFancyDeviceName(mouse.Device), button), data);
                         }
@@ -329,7 +344,18 @@ namespace TeknoParrotUi.Helpers
                 }));
         }
 
-        /// <summary>
+        public void StartTcpCapture()
+        {
+            if (_tcpCaptureRunning) return;
+            _tcpCaptureRunning = true;
+            _tcpClientConnected = false;
+            Array.Clear(_capturePrevTrigger, 0, 4);
+            Array.Clear(_capturePrevReload,  0, 4);
+            Array.Clear(_capturePrevAction,  0, 4);
+            _tcpCaptureThread = new Thread(TcpCaptureLoop) { IsBackground = true, Name = "TcpCaptureConfig" };
+            _tcpCaptureThread.Start();
+        }
+
         /// Gets active text box.
         /// </summary>
         /// <returns></returns>
@@ -353,9 +379,123 @@ namespace TeknoParrotUi.Helpers
 
         public void StopListening()
         {
+            _tcpCaptureRunning = false;
+            try { _tcpCapture?.Stop(); } catch { }
+
             RawInputDevice.UnregisterDevice(HidUsageAndPage.Mouse);
             RawInputDevice.UnregisterDevice(HidUsageAndPage.Keyboard);
             _source?.RemoveHook(WndProcHook);
+        }
+
+        private void TcpCaptureLoop()
+        {
+            try
+            {
+                _tcpCapture = new TcpListener(IPAddress.Loopback, TcpCapturePort);
+                _tcpCapture.Server.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
+                _tcpCapture.Start();
+
+                while (_tcpCaptureRunning)
+                {
+                    if (!_tcpCapture.Pending()) { Thread.Sleep(50); continue; }
+
+                    using (var client = _tcpCapture.AcceptTcpClient())
+                    {
+                        _tcpClientConnected = true;
+                        client.NoDelay = true;
+                        var stream = client.GetStream();
+                        var buf    = new byte[PacketSize * 4];
+                        int filled = 0;
+
+                        while (_tcpCaptureRunning)
+                        {
+                            try
+                            {
+                                int n = stream.Read(buf, filled, buf.Length - filled);
+                                if (n == 0) break;
+                                filled += n;
+
+                                while (filled >= PacketSize)
+                                {
+                                    ProcessCapturePacket(buf);
+                                    Buffer.BlockCopy(buf, PacketSize, buf, 0, filled - PacketSize);
+                                    filled -= PacketSize;
+                                }
+                            }
+                            catch { break; }
+                        }
+                        _tcpClientConnected = false;
+                    }
+                }
+            }
+            catch (SocketException) { }
+            catch (ObjectDisposedException) { }
+            finally { try { _tcpCapture?.Stop(); } catch { } }
+        }
+
+        private void ProcessCapturePacket(byte[] data)
+        {
+            for (int p = 0; p < 4; p++)
+            {
+                bool trigger = data[34 + p] != 0;
+                bool reload  = data[38 + p] != 0;
+                bool action  = data[42 + p] != 0;
+
+                // Rising edges only — one capture per press
+                if (trigger && !_capturePrevTrigger[p])
+                    CaptureButton(TcpLightgunDevice.All[p], RawMouseButton.LeftButton);
+                else if (reload && !_capturePrevReload[p])
+                    CaptureButton(TcpLightgunDevice.All[p], RawMouseButton.RightButton);
+                else if (action && !_capturePrevAction[p])
+                    CaptureButton(TcpLightgunDevice.All[p], RawMouseButton.MiddleButton);
+
+                _capturePrevTrigger[p] = trigger;
+                _capturePrevReload[p]  = reload;
+                _capturePrevAction[p]  = action;
+            }
+        }
+
+        private void CaptureButton(string devicePath, RawMouseButton mouseButton)
+        {
+            string displayName = $"{devicePath} {mouseButton}";
+            var rawButton = new RawInputButton
+            {
+                DevicePath   = devicePath,
+                DeviceType   = RawDeviceType.Mouse,
+                MouseButton  = mouseButton,
+                KeyboardKey  = Keys.None
+            };
+            SetTextBoxTextDirect(displayName, rawButton);
+        }
+
+        private void SetTextBoxTextDirect(string text, RawInputButton button)
+        {
+            Application.Current.Dispatcher.BeginInvoke(
+                DispatcherPriority.Background,
+                new Action(() =>
+                {
+                    var txt = GetActiveTextBox();
+                    if (txt == null) return;
+
+                    if (txt == _lastActiveTextBox)
+                    {
+                        txt.ToolTip = text;
+                        txt.Text    = text;
+
+                        var t = txt.Tag as JoystickButtons;
+                        if (t == null) return;
+                        t.RawInputButton = button;
+                        t.BindNameRi     = text;
+
+                        Keyboard.ClearFocus();
+                        FocusManager.SetFocusedElement(Application.Current.Windows[0], null);
+                        _lastActiveTextBox = null;
+                    }
+                    else
+                    {
+                        _lastActiveTextBox = txt;
+                    }
+                }));
         }
     }
 }
