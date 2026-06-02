@@ -298,6 +298,28 @@ namespace TeknoParrotUi.Common
         Keyboard
     }
 
+    public static class TcpLightgunDevice
+    {
+        public const string P1 = "TCP Lightgun P1";
+        public const string P2 = "TCP Lightgun P2";
+        public const string P3 = "TCP Lightgun P3";
+        public const string P4 = "TCP Lightgun P4";
+
+        public static readonly string[] All = { P1, P2, P3, P4 };
+
+        public static bool IsTcpDevice(string path) =>
+            path == P1 || path == P2 || path == P3 || path == P4;
+
+        public static int PlayerIndex(string path)
+        {
+            if (path == P1) return 0;
+            if (path == P2) return 1;
+            if (path == P3) return 2;
+            if (path == P4) return 3;
+            return -1;
+        }
+    }
+
     [Serializable]
     public class JoystickButtons
     {

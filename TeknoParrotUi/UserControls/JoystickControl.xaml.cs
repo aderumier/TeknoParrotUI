@@ -137,6 +137,8 @@ namespace TeknoParrotUi.UserControls
 
         public void Listen()
         {
+            _joystickControlRawInput?.StartTcpCapture();
+
             if (_inputApi == InputApi.DirectInput)
             {
                 _inputListener = new Thread(() => _joystickControlDirectInput.Listen());
@@ -454,6 +456,7 @@ namespace TeknoParrotUi.UserControls
                     if ((t3.InputMapping == InputMapping.P1LightGun || t3.InputMapping == InputMapping.P2LightGun || t3.InputMapping == InputMapping.P3LightGun || t3.InputMapping == InputMapping.P4LightGun || t3.InputMapping == InputMapping.P1Trackball || t3.InputMapping == InputMapping.P2Trackball) && (_inputApi == InputApi.RawInput || _inputApi == InputApi.RawInputTrackball || (_inputApi == InputApi.MergedInput && (_mergedIncludesRawInput || _mergedIncludesRawInputTrackball))))
                     {
                         var deviceList = new List<string>() { "None", "Windows Mouse Cursor", "Unknown Device" };
+                        deviceList.AddRange(TcpLightgunDevice.All);
                         deviceList.AddRange(_joystickControlRawInput.GetMouseDeviceList());
 
                         // Add current selection even though it isnt currently available
@@ -506,6 +509,11 @@ namespace TeknoParrotUi.UserControls
             else if (selectedDeviceName == "Unknown Device")
             {
                 path = "null";
+                type = RawDeviceType.Mouse;
+            }
+            else if (TcpLightgunDevice.IsTcpDevice(selectedDeviceName))
+            {
+                path = selectedDeviceName;
                 type = RawDeviceType.Mouse;
             }
             else if (selectedDevice == null)

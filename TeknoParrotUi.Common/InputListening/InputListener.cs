@@ -24,6 +24,7 @@ namespace TeknoParrotUi.Common
         private readonly InputListenerDirectInput _inputListenerDirectInput = new InputListenerDirectInput();
         private readonly InputListenerRawInput _inputListenerRawInput = new InputListenerRawInput();
         private readonly InputListenerRawInputTrackball _inputListenerRawInputTrackball = new InputListenerRawInputTrackball();
+        private readonly InputListenerTcpInput _inputListenerTcpInput = new InputListenerTcpInput();
         private static GameProfile _gameprofile;
         private InputApi _inputApi;
         private bool _mergedIncludesRawInput;
@@ -66,6 +67,7 @@ namespace TeknoParrotUi.Common
                 InputListenerDirectInput.KillMe = false;
                 InputListenerRawInput.KillMe = false;
                 InputListenerRawInputTrackball.KillMe = false;
+                InputListenerTcpInput.KillMe = false;
                 _gameprofile = gameProfile;
                 _inputApi = inputApi;
 
@@ -94,6 +96,7 @@ namespace TeknoParrotUi.Common
                 {
                     var thread = new Thread(() => _inputListenerRawInput.ListenRawInput(joystickButtons, gameProfile));
                     thread.Start();
+                    StartTcpInputIfNeeded(joystickButtons, gameProfile);
                 }
                 else if (_inputApi == InputApi.RawInputTrackball)
                 {
@@ -135,6 +138,7 @@ namespace TeknoParrotUi.Common
                     {
                         var riThread = new Thread(() => _inputListenerRawInput.ListenRawInput(joystickButtons, gameProfile));
                         riThread.Start();
+                        StartTcpInputIfNeeded(joystickButtons, gameProfile);
                     }
 
                     // RawInputTrackball for trackball devices (only if the game profile supports it)
@@ -162,6 +166,19 @@ namespace TeknoParrotUi.Common
                 _inputListenerRawInputTrackball.WndProcReceived(hwnd, msg, wParam, lParam, ref handled);
         }
 
+        private void StartTcpInputIfNeeded(List<JoystickButtons> joystickButtons, GameProfile gameProfile)
+        {
+            bool hasTcp = joystickButtons.Any(b =>
+                b?.RawInputButton?.DevicePath != null &&
+                TcpLightgunDevice.IsTcpDevice(b.RawInputButton.DevicePath));
+
+            if (!hasTcp) return;
+
+            var tcpThread = new Thread(() => _inputListenerTcpInput.ListenTcpInput(joystickButtons, gameProfile));
+            tcpThread.IsBackground = true;
+            tcpThread.Start();
+        }
+
         public void StopListening()
         {
             KillMe = true;
@@ -169,6 +186,7 @@ namespace TeknoParrotUi.Common
             InputListenerDirectInput.KillMe = true;
             InputListenerRawInput.KillMe = true;
             InputListenerRawInputTrackball.KillMe = true;
+            InputListenerTcpInput.KillMe = true;
 
             if (_gameprofile.EmulationProfile == EmulationProfile.NamcoWmmt5 || _gameprofile.EmulationProfile == EmulationProfile.NamcoWmmt6RR)
             {
