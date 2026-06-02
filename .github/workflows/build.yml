@@ -1,0 +1,33 @@
+name: Build
+
+on:
+  push:
+    branches: [ "**" ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+    runs-on: windows-2022
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Install .NET Framework targeting packs
+        run: choco install netfx-4.6.1-devpack --no-progress -y
+        shell: pwsh
+
+      - name: Restore NuGet packages
+        run: nuget restore TeknoParrotUI.sln
+
+      - name: Build (Release)
+        run: msbuild TeknoParrotUI.sln /p:Configuration=Release /p:Platform=x86 /m /nologo /v:minimal
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: TeknoParrotUI
+          path: bin/x86/Release/
