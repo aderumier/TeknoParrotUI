@@ -17,6 +17,7 @@ namespace TeknoParrotUi.Common.InputListening
         private float _minX, _maxX, _minY, _maxY;
         private bool _invertedMouseAxis, _16bit;
         private bool _isLuigisMansion, _isGunslinger, _isPrimevalHunt, _onedisplay, _swapdisplay;
+        private bool _isHauntedMuseum;
         private bool _useDirectionalPresses;
         private List<JoystickButtons> _tcpButtons;
 
@@ -36,6 +37,8 @@ namespace TeknoParrotUi.Common.InputListening
             _isLuigisMansion         = gameProfile.EmulationProfile == EmulationProfile.LuigisMansion;
             _isGunslinger            = gameProfile.EmulationProfile == EmulationProfile.GunslingerStratos3;
             _isPrimevalHunt          = gameProfile.EmulationProfile == EmulationProfile.PrimevalHunt;
+            _isHauntedMuseum         = gameProfile.EmulationProfile == EmulationProfile.HauntedMuseum ||
+                                       gameProfile.EmulationProfile == EmulationProfile.HauntedMuseum2;
             _16bit                   = gameProfile.Use16BitAnalog;
             _useDirectionalPresses   = gameProfile.UseDirectionalPresses;
 
@@ -224,23 +227,128 @@ namespace TeknoParrotUi.Common.InputListening
                         InputCode.PlayerDigitalButtons[1].Right = pressed;
                     break;
 
-                case InputMapping.ExtensionOne1:  InputCode.PlayerDigitalButtons[0].ExtensionButton1_1 = pressed; break;
-                case InputMapping.ExtensionOne2:  InputCode.PlayerDigitalButtons[0].ExtensionButton1_2 = pressed; break;
-                case InputMapping.ExtensionOne3:  InputCode.PlayerDigitalButtons[0].ExtensionButton1_3 = pressed; break;
-                case InputMapping.ExtensionOne4:  InputCode.PlayerDigitalButtons[0].ExtensionButton1_4 = pressed; break;
-                case InputMapping.ExtensionOne11: InputCode.PlayerDigitalButtons[0].ExtensionButton1_5 = pressed; break;
-                case InputMapping.ExtensionOne12: InputCode.PlayerDigitalButtons[0].ExtensionButton1_6 = pressed; break;
-                case InputMapping.ExtensionOne13: InputCode.PlayerDigitalButtons[0].ExtensionButton1_7 = pressed; break;
-                case InputMapping.ExtensionOne14: InputCode.PlayerDigitalButtons[0].ExtensionButton1_8 = pressed; break;
+                // JVS board 2 (players 3 & 4)
+                case InputMapping.JvsTwoService1:    InputCode.PlayerDigitalButtons[2].Service = pressed; break;
+                case InputMapping.JvsTwoService2:    InputCode.PlayerDigitalButtons[3].Service = pressed; break;
+                case InputMapping.JvsTwoCoin1:       InputCode.PlayerDigitalButtons[2].Coin    = pressed; break;
+                case InputMapping.JvsTwoCoin2:       InputCode.PlayerDigitalButtons[3].Coin    = pressed; break;
 
-                case InputMapping.ExtensionTwo1:  InputCode.PlayerDigitalButtons[1].ExtensionButton1_1 = pressed; break;
-                case InputMapping.ExtensionTwo2:  InputCode.PlayerDigitalButtons[1].ExtensionButton1_2 = pressed; break;
-                case InputMapping.ExtensionTwo3:  InputCode.PlayerDigitalButtons[1].ExtensionButton1_3 = pressed; break;
-                case InputMapping.ExtensionTwo4:  InputCode.PlayerDigitalButtons[1].ExtensionButton1_4 = pressed; break;
-                case InputMapping.ExtensionTwo11: InputCode.PlayerDigitalButtons[1].ExtensionButton1_5 = pressed; break;
-                case InputMapping.ExtensionTwo12: InputCode.PlayerDigitalButtons[1].ExtensionButton1_6 = pressed; break;
-                case InputMapping.ExtensionTwo13: InputCode.PlayerDigitalButtons[1].ExtensionButton1_7 = pressed; break;
-                case InputMapping.ExtensionTwo14: InputCode.PlayerDigitalButtons[1].ExtensionButton1_8 = pressed; break;
+                case InputMapping.JvsTwoP1ButtonStart: InputCode.PlayerDigitalButtons[2].Start   = pressed; break;
+                case InputMapping.JvsTwoP1Button1:     InputCode.PlayerDigitalButtons[2].Button1 = pressed; break;
+                case InputMapping.JvsTwoP1Button2:     InputCode.PlayerDigitalButtons[2].Button2 = pressed; break;
+                case InputMapping.JvsTwoP1Button3:     InputCode.PlayerDigitalButtons[2].Button3 = pressed; break;
+                case InputMapping.JvsTwoP1Button4:     InputCode.PlayerDigitalButtons[2].Button4 = pressed; break;
+                case InputMapping.JvsTwoP1Button5:     InputCode.PlayerDigitalButtons[2].Button5 = pressed; break;
+                case InputMapping.JvsTwoP1Button6:     InputCode.PlayerDigitalButtons[2].Button6 = pressed; break;
+
+                case InputMapping.JvsTwoP1ButtonUp:
+                    if (_useDirectionalPresses)
+                        InputCode.SetPlayerDirection(InputCode.PlayerDigitalButtons[2], pressed ? Direction.Up : Direction.VerticalCenter);
+                    else
+                        InputCode.PlayerDigitalButtons[2].Up = pressed;
+                    break;
+                case InputMapping.JvsTwoP1ButtonDown:
+                    if (_useDirectionalPresses)
+                        InputCode.SetPlayerDirection(InputCode.PlayerDigitalButtons[2], pressed ? Direction.Down : Direction.VerticalCenter);
+                    else
+                        InputCode.PlayerDigitalButtons[2].Down = pressed;
+                    break;
+                case InputMapping.JvsTwoP1ButtonLeft:
+                    if (_useDirectionalPresses)
+                        InputCode.SetPlayerDirection(InputCode.PlayerDigitalButtons[2], pressed ? Direction.Left : Direction.HorizontalCenter);
+                    else
+                        InputCode.PlayerDigitalButtons[2].Left = pressed;
+                    break;
+                case InputMapping.JvsTwoP1ButtonRight:
+                    if (_useDirectionalPresses)
+                        InputCode.SetPlayerDirection(InputCode.PlayerDigitalButtons[2], pressed ? Direction.Right : Direction.HorizontalCenter);
+                    else
+                        InputCode.PlayerDigitalButtons[2].Right = pressed;
+                    break;
+
+                case InputMapping.JvsTwoP2ButtonStart: InputCode.PlayerDigitalButtons[3].Start   = pressed; break;
+                case InputMapping.JvsTwoP2Button1:     InputCode.PlayerDigitalButtons[3].Button1 = pressed; break;
+                case InputMapping.JvsTwoP2Button2:     InputCode.PlayerDigitalButtons[3].Button2 = pressed; break;
+                case InputMapping.JvsTwoP2Button3:     InputCode.PlayerDigitalButtons[3].Button3 = pressed; break;
+                case InputMapping.JvsTwoP2Button4:     InputCode.PlayerDigitalButtons[3].Button4 = pressed; break;
+                case InputMapping.JvsTwoP2Button5:     InputCode.PlayerDigitalButtons[3].Button5 = pressed; break;
+                case InputMapping.JvsTwoP2Button6:     InputCode.PlayerDigitalButtons[3].Button6 = pressed; break;
+
+                case InputMapping.JvsTwoP2ButtonUp:
+                    if (_useDirectionalPresses)
+                        InputCode.SetPlayerDirection(InputCode.PlayerDigitalButtons[3], pressed ? Direction.Up : Direction.VerticalCenter);
+                    else
+                        InputCode.PlayerDigitalButtons[3].Up = pressed;
+                    break;
+                case InputMapping.JvsTwoP2ButtonDown:
+                    if (_useDirectionalPresses)
+                        InputCode.SetPlayerDirection(InputCode.PlayerDigitalButtons[3], pressed ? Direction.Down : Direction.VerticalCenter);
+                    else
+                        InputCode.PlayerDigitalButtons[3].Down = pressed;
+                    break;
+                case InputMapping.JvsTwoP2ButtonLeft:
+                    if (_useDirectionalPresses)
+                        InputCode.SetPlayerDirection(InputCode.PlayerDigitalButtons[3], pressed ? Direction.Left : Direction.HorizontalCenter);
+                    else
+                        InputCode.PlayerDigitalButtons[3].Left = pressed;
+                    break;
+                case InputMapping.JvsTwoP2ButtonRight:
+                    if (_useDirectionalPresses)
+                        InputCode.SetPlayerDirection(InputCode.PlayerDigitalButtons[3], pressed ? Direction.Right : Direction.HorizontalCenter);
+                    else
+                        InputCode.PlayerDigitalButtons[3].Right = pressed;
+                    break;
+
+                // Card reader / TP system
+                case InputMapping.Card1:     InputCode.PlayerDigitalButtons[0].Card = pressed; break;
+                case InputMapping.Card2:     InputCode.PlayerDigitalButtons[1].Card = pressed; break;
+                case InputMapping.TPSystem1: InputCode.TPSystem1 = pressed; break;
+                case InputMapping.TPSystem2: InputCode.TPSystem2 = pressed; break;
+                case InputMapping.TPSystem3: InputCode.TPSystem3 = pressed; break;
+
+                // Ext1 (player 1)
+                case InputMapping.ExtensionOne1:  InputCode.PlayerDigitalButtons[0].ExtensionButton1   = pressed; break;
+                case InputMapping.ExtensionOne2:  InputCode.PlayerDigitalButtons[0].ExtensionButton2   = pressed; break;
+                case InputMapping.ExtensionOne3:  InputCode.PlayerDigitalButtons[0].ExtensionButton3   = pressed; break;
+                case InputMapping.ExtensionOne4:  InputCode.PlayerDigitalButtons[0].ExtensionButton4   = pressed; break;
+                case InputMapping.ExtensionOne11: InputCode.PlayerDigitalButtons[0].ExtensionButton1_1 = pressed; break;
+                case InputMapping.ExtensionOne12: InputCode.PlayerDigitalButtons[0].ExtensionButton1_2 = pressed; break;
+                case InputMapping.ExtensionOne13: InputCode.PlayerDigitalButtons[0].ExtensionButton1_3 = pressed; break;
+                case InputMapping.ExtensionOne14: InputCode.PlayerDigitalButtons[0].ExtensionButton1_4 = pressed; break;
+                case InputMapping.ExtensionOne15: InputCode.PlayerDigitalButtons[0].ExtensionButton1_5 = pressed; break;
+                case InputMapping.ExtensionOne16: InputCode.PlayerDigitalButtons[0].ExtensionButton1_6 = pressed; break;
+                case InputMapping.ExtensionOne17: InputCode.PlayerDigitalButtons[0].ExtensionButton1_7 = _isHauntedMuseum ? !pressed : pressed; break;
+                case InputMapping.ExtensionOne18: InputCode.PlayerDigitalButtons[0].ExtensionButton1_8 = _isHauntedMuseum ? !pressed : pressed; break;
+                case InputMapping.ExtensionOne21: InputCode.PlayerDigitalButtons[0].ExtensionButton2_1 = pressed; break;
+                case InputMapping.ExtensionOne22: InputCode.PlayerDigitalButtons[0].ExtensionButton2_2 = pressed; break;
+                case InputMapping.ExtensionOne23: InputCode.PlayerDigitalButtons[0].ExtensionButton2_3 = pressed; break;
+                case InputMapping.ExtensionOne24: InputCode.PlayerDigitalButtons[0].ExtensionButton2_4 = pressed; break;
+                case InputMapping.ExtensionOne25: InputCode.PlayerDigitalButtons[0].ExtensionButton2_5 = pressed; break;
+                case InputMapping.ExtensionOne26: InputCode.PlayerDigitalButtons[0].ExtensionButton2_6 = pressed; break;
+                case InputMapping.ExtensionOne27: InputCode.PlayerDigitalButtons[0].ExtensionButton2_7 = pressed; break;
+                case InputMapping.ExtensionOne28: InputCode.PlayerDigitalButtons[0].ExtensionButton2_8 = pressed; break;
+
+                // Ext2 (player 2)
+                case InputMapping.ExtensionTwo1:  InputCode.PlayerDigitalButtons[1].ExtensionButton1   = pressed; break;
+                case InputMapping.ExtensionTwo2:  InputCode.PlayerDigitalButtons[1].ExtensionButton2   = pressed; break;
+                case InputMapping.ExtensionTwo3:  InputCode.PlayerDigitalButtons[1].ExtensionButton3   = pressed; break;
+                case InputMapping.ExtensionTwo4:  InputCode.PlayerDigitalButtons[1].ExtensionButton4   = pressed; break;
+                case InputMapping.ExtensionTwo11: InputCode.PlayerDigitalButtons[1].ExtensionButton1_1 = pressed; break;
+                case InputMapping.ExtensionTwo12: InputCode.PlayerDigitalButtons[1].ExtensionButton1_2 = pressed; break;
+                case InputMapping.ExtensionTwo13: InputCode.PlayerDigitalButtons[1].ExtensionButton1_3 = pressed; break;
+                case InputMapping.ExtensionTwo14: InputCode.PlayerDigitalButtons[1].ExtensionButton1_4 = pressed; break;
+                case InputMapping.ExtensionTwo15: InputCode.PlayerDigitalButtons[1].ExtensionButton1_5 = pressed; break;
+                case InputMapping.ExtensionTwo16: InputCode.PlayerDigitalButtons[1].ExtensionButton1_6 = pressed; break;
+                case InputMapping.ExtensionTwo17: InputCode.PlayerDigitalButtons[1].ExtensionButton1_7 = pressed; break;
+                case InputMapping.ExtensionTwo18: InputCode.PlayerDigitalButtons[1].ExtensionButton1_8 = pressed; break;
+                case InputMapping.ExtensionTwo21: InputCode.PlayerDigitalButtons[1].ExtensionButton2_1 = pressed; break;
+                case InputMapping.ExtensionTwo22: InputCode.PlayerDigitalButtons[1].ExtensionButton2_2 = pressed; break;
+                case InputMapping.ExtensionTwo23: InputCode.PlayerDigitalButtons[1].ExtensionButton2_3 = pressed; break;
+                case InputMapping.ExtensionTwo24: InputCode.PlayerDigitalButtons[1].ExtensionButton2_4 = pressed; break;
+                case InputMapping.ExtensionTwo25: InputCode.PlayerDigitalButtons[1].ExtensionButton2_5 = pressed; break;
+                case InputMapping.ExtensionTwo26: InputCode.PlayerDigitalButtons[1].ExtensionButton2_6 = pressed; break;
+                case InputMapping.ExtensionTwo27: InputCode.PlayerDigitalButtons[1].ExtensionButton2_7 = pressed; break;
+                case InputMapping.ExtensionTwo28: InputCode.PlayerDigitalButtons[1].ExtensionButton2_8 = pressed; break;
             }
         }
 
